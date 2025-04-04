@@ -9,9 +9,11 @@ const Navbar: React.FC = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex-shrink-0">
-              <span className="font-nasalization text-2xl text-white tracking-wider">
-                FindChain
-              </span>
+              <img
+                src="./images/logo.png"
+                alt="FindChain Logo"
+                className="h-10 w-auto"
+              />
             </div>
 
             {/* Navigation Links */}

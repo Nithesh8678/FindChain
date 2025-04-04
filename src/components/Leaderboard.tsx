@@ -17,7 +17,7 @@ const Leaderboard: React.FC = () => {
   ];
 
   return (
-    <div className="fixed left-4 top-24 w-80 z-40 mt-24">
+    <div className="fixed left-9 top-24 w-80 z-40 mt-24">
       <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="p-4 border-b border-white/10">
