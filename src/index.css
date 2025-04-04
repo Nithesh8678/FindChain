@@ -1,1 +1,48 @@
 @import "tailwindcss";
+
+:root {
+  --font-nasalization: "Nasalization", sans-serif;
+  --font-montserrat: "Montserrat", sans-serif;
+}
+
+/* Nasalization Font */
+@font-face {
+  font-family: "Nasalization";
+  src: url("/fonts/nasalization/Nasalization Rg.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Montserrat Font */
+@font-face {
+  font-family: "Montserrat";
+  src: url("/fonts/Montserrat/Montserrat-VariableFont_wght.ttf")
+    format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Montserrat";
+  src: url("/fonts/Montserrat/Montserrat-Italic-VariableFont_wght.ttf")
+    format("truetype");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Apply fonts to elements */
+.font-nasalization {
+  font-family: var(--font-nasalization);
+}
+
+.font-montserrat {
+  font-family: var(--font-montserrat);
+}
+
+.font-montserrat-italic {
+  font-family: var(--font-montserrat);
+  font-style: italic;
+}

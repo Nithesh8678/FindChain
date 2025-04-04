@@ -4,9 +4,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        nasalization: ["Nasalization", "sans-serif"],
-        montserrat: ["Montserrat", "sans-serif"],
-        "montserrat-italic": ["Montserrat", "sans-serif", "italic"],
+        nasalization: ["var(--font-nasalization)"],
+        montserrat: ["var(--font-montserrat)"],
+        "montserrat-italic": ["var(--font-montserrat)", "italic"],
       },
       keyframes: {
         "fade-in-down": {
