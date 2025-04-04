@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read access to all items
+    match /items/{itemId} {
+      allow read: if true;
+      
+      // Allow write access for creating new items
+      allow create: if true;
+      
+      // Allow update/delete only by the item owner
+      allow update, delete: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || 
+         resource.data.userId == "temp-" + request.time.toMillis());
+    }
+    
+    // Default deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+} 

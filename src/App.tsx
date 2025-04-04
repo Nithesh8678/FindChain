@@ -1,58 +1,125 @@
-import { useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { loadFont } from "./utils/fontLoader";
-import { debugFontLoading } from "./utils/fontDebug";
+import React, { useEffect } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import WalletProvider from "./components/WalletProvider";
-import Home from "./components/Home";
-import About from "./components/About";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { LoadingProvider, useLoading } from "./context/LoadingContext";
 import Navbar from "./components/Navbar";
-import LoadingScreen from "./components/LoadingScreen";
-import LoadingProvider, { useLoading } from "./context/LoadingContext";
-import "./index.css";
+import Home from "./components/Home";
 import ReportLost from "./components/ReportLost";
 import ReportFound from "./components/ReportFound";
 import Leaderboard from "./components/Leaderboard";
+import Auth from "./components/Auth";
+import Welcome from "./components/Welcome";
+import LoadingScreen from "./components/LoadingScreen";
+import About from "./components/About";
 
-// Wrapper component to access the loading context
-const AppContent = () => {
+// Protected Route component
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingScreen isLoading={true} />;
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" />;
+  }
+
+  return <>{children}</>;
+};
+
+// Public Route component (redirects to dashboard if already authenticated)
+const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingScreen isLoading={true} />;
+  }
+
+  if (user) {
+    return <Navigate to="/dashboard" />;
+  }
+
+  return <>{children}</>;
+};
+
+const AppContent: React.FC = () => {
   const { isLoading } = useLoading();
-
-  useEffect(() => {
-    // Load fonts
-    loadFont("Nasalization");
-    loadFont("Montserrat");
-
-    // Debug font loading
-    debugFontLoading();
-  }, []);
+  const { user, uniqueId } = useAuth();
 
   return (
     <>
-      <LoadingScreen isLoading={isLoading} />
-      <div className="min-h-screen bg-[#030502] text-white">
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/report-lost" element={<ReportLost />} />
-          <Route path="/report-found" element={<ReportFound />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-        </Routes>
-      </div>
+      {isLoading && <LoadingScreen isLoading={true} />}
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/report-lost" element={<ReportLost />} />
+        <Route path="/report-found" element={<ReportFound />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route
+          path="/auth"
+          element={
+            <PublicRoute>
+              <Auth />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/welcome"
+          element={
+            <ProtectedRoute>
+              <Welcome
+                userName={user?.displayName || "User"}
+                uniqueId={uniqueId || ""}
+              />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <div className="min-h-screen bg-[#030502] text-white p-8">
+                <h1 className="text-4xl font-nasalization mb-8">Dashboard</h1>
+                <p className="font-montserrat">Welcome to your dashboard!</p>
+              </div>
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
     </>
   );
 };
 
-function App() {
+const App: React.FC = () => {
+  useEffect(() => {
+    // Load fonts
+    const link = document.createElement("link");
+    link.href =
+      "https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap";
+    link.rel = "stylesheet";
+    document.head.appendChild(link);
+  }, []);
+
   return (
     <Router>
-      <WalletProvider>
-        <LoadingProvider>
-          <AppContent />
-        </LoadingProvider>
-      </WalletProvider>
+      <AuthProvider>
+        <WalletProvider>
+          <LoadingProvider>
+            <AppContent />
+          </LoadingProvider>
+        </WalletProvider>
+      </AuthProvider>
     </Router>
   );
-}
+};
 
 export default App;
