@@ -97,14 +97,14 @@ const About: React.FC = () => {
             loop
             muted
             playsInline
-            className="w-full h-full object-cover opacity-50"
+            className="w-full h-full object-cover"
           >
             <source src="/demo.mp4" type="video/mp4" />
           </video>
-          <div className="absolute inset-0 bg-gradient-to-b from-[#030502] via-transparent to-[#030502]" />
+          {/* <div className="absolute inset-0 bg-gradient-to-b from-[#030502] via-transparent to-[#030502]" /> */}
         </div>
 
-        <div className="relative z-10 text-center max-w-4xl mx-auto px-4">
+        {/* <div className="relative z-10 text-center max-w-4xl mx-auto px-4">
           <motion.h1
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -122,7 +122,7 @@ const About: React.FC = () => {
             A revolutionary blockchain-based platform for finding and returning
             lost items
           </motion.p>
-        </div>
+        </div> */}
       </motion.div>
 
       {/* Features Section */}
