@@ -1,6 +1,6 @@
 import React from "react";
 import Button from "./Button";
-import Leaderboard from "./Leaderboard";
+import Leaderboardhome from "./Leaderboardhome";
 
 const Home: React.FC = () => {
   return (
@@ -57,7 +57,7 @@ const Home: React.FC = () => {
       </div>
 
       {/* Leaderboard - Only visible on home page */}
-      <Leaderboard />
+      <Leaderboardhome />
     </>
   );
 };
