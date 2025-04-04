@@ -1,4 +1,5 @@
 import React from "react";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const Navbar: React.FC = () => {
   return (
@@ -40,9 +41,102 @@ const Navbar: React.FC = () => {
                 >
                   Leaderboard
                 </a>
-                <button className="bg-gradient-to-r from-[#03672A] to-[#046A29] text-white px-6 py-2 rounded-full font-montserrat text-sm font-medium hover:from-[#046A29] hover:to-[#03672A] transition-all duration-200 transform hover:scale-105 hover:shadow-lg">
-                  Connect Wallet
-                </button>
+                <ConnectButton.Custom>
+                  {({
+                    account,
+                    chain,
+                    openAccountModal,
+                    openChainModal,
+                    openConnectModal,
+                    mounted,
+                  }) => {
+                    // Note: If your app doesn't use SSR, you can remove this check
+                    const ready = mounted;
+                    const connected = ready && account && chain;
+
+                    return (
+                      <div
+                        {...(!ready && {
+                          "aria-hidden": true,
+                          style: {
+                            opacity: 0,
+                            pointerEvents: "none",
+                            userSelect: "none",
+                          },
+                        })}
+                      >
+                        {(() => {
+                          if (!connected) {
+                            return (
+                              <button
+                                onClick={openConnectModal}
+                                type="button"
+                                className="bg-gradient-to-r from-[#03672A] to-[#046A29] text-white px-6 py-2 rounded-full font-montserrat text-sm font-medium hover:from-[#046A29] hover:to-[#03672A] transition-all duration-200 transform hover:scale-105 hover:shadow-lg"
+                              >
+                                Connect Wallet
+                              </button>
+                            );
+                          }
+
+                          if (chain.unsupported) {
+                            return (
+                              <button
+                                onClick={openChainModal}
+                                type="button"
+                                className="bg-red-500 text-white px-6 py-2 rounded-full font-montserrat text-sm font-medium hover:bg-red-600 transition-all duration-200 transform hover:scale-105 hover:shadow-lg"
+                              >
+                                Wrong network
+                              </button>
+                            );
+                          }
+
+                          return (
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={openChainModal}
+                                type="button"
+                                className="flex items-center gap-2 bg-white/10 text-white px-4 py-2 rounded-full font-montserrat text-sm font-medium hover:bg-white/20 transition-all duration-200"
+                              >
+                                {chain.hasIcon && (
+                                  <div
+                                    style={{
+                                      background: chain.iconBackground,
+                                      width: 12,
+                                      height: 12,
+                                      borderRadius: 999,
+                                      overflow: "hidden",
+                                      marginRight: 4,
+                                    }}
+                                  >
+                                    {chain.iconUrl && (
+                                      <img
+                                        alt={chain.name ?? "Chain icon"}
+                                        src={chain.iconUrl}
+                                        style={{ width: 12, height: 12 }}
+                                      />
+                                    )}
+                                  </div>
+                                )}
+                                {chain.name}
+                              </button>
+
+                              <button
+                                onClick={openAccountModal}
+                                type="button"
+                                className="bg-white/10 text-white px-4 py-2 rounded-full font-montserrat text-sm font-medium hover:bg-white/20 transition-all duration-200"
+                              >
+                                {account.displayName}
+                                {account.displayBalance
+                                  ? ` (${account.displayBalance})`
+                                  : ""}
+                              </button>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    );
+                  }}
+                </ConnectButton.Custom>
               </div>
             </div>
 

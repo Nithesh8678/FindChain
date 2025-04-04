@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import Home from "./components/Home";
 import { loadFont } from "./utils/fontLoader";
 import { debugFontLoading } from "./utils/fontDebug";
+import WalletProvider from "./components/WalletProvider";
 import "./index.css";
 
 function App() {
@@ -15,9 +16,11 @@ function App() {
   }, []);
 
   return (
-    <div className="App">
-      <Home />
-    </div>
+    <WalletProvider>
+      <div className="App">
+        <Home />
+      </div>
+    </WalletProvider>
   );
 }
 
