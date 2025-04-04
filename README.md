@@ -1,54 +1,113 @@
-# React + TypeScript + Vite
+# 🔐 Reclaim – Revolutionizing Lost & Found with Web3, AI & Blockchain
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Reclaim is a revolutionary Web3-based platform designed to transform the lost-and-found experience. By integrating AI-powered image recognition, NLP-based text matching, geolocation alerts, and a blockchain-based bounty system, Reclaim makes item recovery fast, efficient, and community-driven.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Features
 
-## Expanding the ESLint configuration
+- 🤖 AI-Powered Matching  
+  Match lost and found items using intelligent image recognition and natural language processing — even with vague or incomplete descriptions.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- 📍 Geo-Fenced Alerts  
+  Real-time notifications are sent to users near the item’s last known or found location, increasing the chances of successful recovery.
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+- 💰 Blockchain-Based Bounties  
+  Users can attach crypto bounties to lost items to incentivize honest returns, secured via smart contracts for transparency and trust.
+
+- 🧑 Personalized Dashboards  
+  Users can track their reported items, claim found items, and monitor bounty progress.
+
+- 🏆 Community Leaderboard  
+  Reclaim recognizes honest finders and top contributors with a leaderboard and reputation system.
+
+---
+
+## 🧠 Tech Stack
+
+| Layer           | Tech Used                                     |
+|----------------|-----------------------------------------------|
+| Frontend       | Next.js, Tailwind CSS, Framer Motion          |
+| Backend        | Node.js, Express.js                           |
+| AI Matching    | Gemini API (Text-based matching) + Image AI   |
+| Database       | MongoDB (Mongoose)                            |
+| Authentication | JWT / Web3 Wallet                             |
+| Blockchain     | Ethereum / Polygon + Smart Contracts (Solidity) |
+| Cloud Storage  | AWS S3 / Cloudinary for images                |
+| Geolocation    | Leaflet.js / Google Maps API                  |
+
+---
 ```
+## 🗂 Project Structure
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+📦 reclaim-web3
+├── frontend/          # Next.js-based UI (animated landing, dashboard)
+├── backend/           # Express.js API routes (matchmaking, reporting)
+├── smart-contracts/   # Solidity contracts for bounties
+├── models/            # MongoDB schema definitions
+├── public/            # Static assets
+└── README.md
 ```
+---
+
+## 📦 MongoDB Collections
+
+- users
+- lost_items
+- found_items
+- matches
+- bounties
+- leaderboard
+
+---
+
+## 🧪 Local Development
+
+bash
+# Clone repo
+git clone https://github.com/yourusername/reclaim-web3.git
+cd reclaim-web3
+
+# Install dependencies
+cd frontend
+npm install
+
+# Start the frontend
+npm run dev
+
+# In a new terminal, run the backend
+cd ../backend
+npm install
+npm run dev
+
+
+---
+
+## 🌐 Deployment
+
+Deploy on Vercel (Frontend), Render/Heroku (Backend), and IPFS/Filecoin for decentralization (optional).
+
+---
+
+## 🤝 Contributing
+
+We welcome community contributions! Please open a pull request or raise an issue to get started.
+
+---
+
+## 📄 License
+
+MIT License © 2025 [Your Name / Org]
+
+---
+
+## 🙌 Acknowledgements
+
+- Google Gemini
+- OpenAI
+- Chainlink
+- MongoDB Atlas
+- Filebase (IPFS)
+
+
