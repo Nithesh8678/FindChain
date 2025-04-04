@@ -12,18 +12,6 @@ const Home: React.FC = () => {
 
       {/* Navbar */}
       <Navbar />
-
-      {/* Content */}
-      <div className="relative z-10 flex items-center justify-center min-h-screen pt-20">
-        <div className="text-center text-white p-8">
-          <h1 className="font-nasalization text-6xl mb-4 uppercase tracking-wider animate-fade-in-down">
-            Welcome to FindChain
-          </h1>
-          <p className="font-montserrat text-2xl font-medium opacity-90 animate-fade-in-up">
-            Discover the Future of Blockchain
-          </p>
-        </div>
-      </div>
     </div>
   );
 };

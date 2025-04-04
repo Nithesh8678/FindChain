@@ -41,6 +41,29 @@ const Navbar: React.FC = () => {
                 >
                   Leaderboard
                 </a>
+
+                {/* Dashboard/Profile Icon */}
+                <a
+                  href="#dashboard"
+                  className="text-white/90 hover:text-white transition-all duration-200 hover:scale-105"
+                  aria-label="Dashboard"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6 p-1 outline-1 outline-white/20 rounded-full"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
+                </a>
+
                 <ConnectButton.Custom>
                   {({
                     account,
