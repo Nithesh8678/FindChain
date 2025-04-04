@@ -37,7 +37,7 @@ Reclaim is a revolutionary Web3-based platform designed to transform the lost-an
 | Geolocation    | Leaflet.js / Google Maps API                  |
 
 ---
-
+```
 ## 🗂 Project Structure
 
 
@@ -48,8 +48,7 @@ Reclaim is a revolutionary Web3-based platform designed to transform the lost-an
 ├── models/            # MongoDB schema definitions
 ├── public/            # Static assets
 └── README.md
-
-
+```
 ---
 
 ## 📦 MongoDB Collections
