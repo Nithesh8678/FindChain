@@ -8,6 +8,7 @@ import {
   FiPhone,
   FiMail,
 } from "react-icons/fi";
+import { FaEthereum } from "react-icons/fa";
 
 const categories = [
   "Electronics",
@@ -32,6 +33,7 @@ const ReportLost: React.FC = () => {
     location: "",
     contactPhone: "",
     contactEmail: "",
+    rewardAmount: "",
     image: null as File | null,
   });
 
@@ -44,6 +46,14 @@ const ReportLost: React.FC = () => {
         setSelectedImage(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRewardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow only numbers and decimals
+    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      setFormData({ ...formData, rewardAmount: value });
     }
   };
 
@@ -163,7 +173,7 @@ const ReportLost: React.FC = () => {
                 {/* Date and Time */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-white/80 mb-2 font-montserrat flex items-center">
+                    <label className=" text-white/80 mb-2 font-montserrat flex items-center">
                       <FiCalendar size={18} className="mr-2" />
                       Date Lost
                     </label>
@@ -177,7 +187,7 @@ const ReportLost: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-white/80 mb-2 font-montserrat flex items-center">
+                    <label className=" text-white/80 mb-2 font-montserrat flex items-center">
                       <FiClock size={18} className="mr-2" />
                       Time Lost
                     </label>
@@ -194,7 +204,7 @@ const ReportLost: React.FC = () => {
 
                 {/* Location */}
                 <div>
-                  <label className="block text-white/80 mb-2 font-montserrat flex items-center">
+                  <label className="text-white/80 mb-2 font-montserrat flex items-center">
                     <FiMapPin size={18} className="mr-2" />
                     Location Lost
                   </label>
@@ -207,6 +217,35 @@ const ReportLost: React.FC = () => {
                     className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-[#03672A] transition-colors duration-300 outline-none font-montserrat"
                     placeholder="Enter location where item was lost"
                   />
+                </div>
+
+                {/* Reward Amount */}
+                <div>
+                  <label className="text-white/80 mb-2 font-montserrat flex items-center">
+                    <FaEthereum size={18} className="mr-2" />
+                    Reward Amount (ETH)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={formData.rewardAmount}
+                      onChange={handleRewardChange}
+                      className="w-full px-4 py-3 pl-12 rounded-xl bg-white/5 border border-white/10 text-white focus:border-[#03672A] transition-colors duration-300 outline-none font-montserrat"
+                      placeholder="0.00"
+                      step="0.01"
+                    />
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <FaEthereum className="text-white/60" size={16} />
+                    </div>
+                    {formData.rewardAmount && (
+                      <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                        <span className="text-white/60 text-sm">ETH</span>
+                      </div>
+                    )}
+                  </div>
+                  <p className="mt-1 text-white/40 text-xs font-montserrat">
+                    Enter the reward amount in ETH you're willing to offer
+                  </p>
                 </div>
 
                 {/* Image Upload */}
@@ -257,7 +296,7 @@ const ReportLost: React.FC = () => {
               >
                 {/* Contact Information */}
                 <div>
-                  <label className="block text-white/80 mb-2 font-montserrat flex items-center">
+                  <label className="text-white/80 mb-2 font-montserrat flex items-center">
                     <FiPhone size={18} className="mr-2" />
                     Phone Number
                   </label>
@@ -273,7 +312,7 @@ const ReportLost: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-white/80 mb-2 font-montserrat flex items-center">
+                  <label className=" text-white/80 mb-2 font-montserrat flex items-center">
                     <FiMail size={18} className="mr-2" />
                     Email Address
                   </label>

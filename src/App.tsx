@@ -10,6 +10,7 @@ import LoadingScreen from "./components/LoadingScreen";
 import LoadingProvider, { useLoading } from "./context/LoadingContext";
 import "./index.css";
 import ReportLost from "./components/ReportLost";
+import ReportFound from "./components/ReportFound";
 
 // Wrapper component to access the loading context
 const AppContent = () => {
@@ -33,6 +34,7 @@ const AppContent = () => {
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/report-lost" element={<ReportLost />} />
+          <Route path="/report-found" element={<ReportFound />} />
         </Routes>
       </div>
     </>
