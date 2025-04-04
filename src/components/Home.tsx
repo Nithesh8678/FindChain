@@ -1,6 +1,6 @@
 import React from "react";
-import Navbar from "./Navbar";
 import Button from "./Button";
+import Leaderboard from "./Leaderboard";
 
 const Home: React.FC = () => {
   return (
@@ -12,14 +12,11 @@ const Home: React.FC = () => {
         {/* Overlay */}
         <div className="absolute inset-0 bg-black/50"></div>
 
-        {/* Navbar */}
-        <Navbar />
-
         {/* Buttons section with heading */}
         <div className="fixed right-24 top-[calc(28rem+2rem)] z-40">
           {/* Heading and description */}
           <div className="mb-6">
-            <h2 className="font-nasalization text-5xl text-white font-bold ml-26 mb-2 tracking-wider">
+            <h2 className="font-nasalization text-5xl text-white mb-2 ml-26 tracking-wider">
               FindChain
             </h2>
             <p className="font-montserrat text-md text-white/80 max-w-lg">
@@ -28,7 +25,7 @@ const Home: React.FC = () => {
           </div>
 
           {/* Buttons and separator */}
-          <div className="flex items-center gap-8 ml-14">
+          <div className="flex items-center gap-8 ml-12">
             <Button>Discover</Button>
 
             {/* Separator Line */}
@@ -58,6 +55,9 @@ const Home: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Leaderboard - Only visible on home page */}
+      <Leaderboard />
     </>
   );
 };

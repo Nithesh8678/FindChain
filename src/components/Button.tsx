@@ -21,7 +21,7 @@ const Button: React.FC<ButtonProps> = ({
         py-3
         bg-white/10
         backdrop-blur-sm
-         rounded-tr-full rounded-bl-full rounded-br-full
+        rounded-tr-full rounded-bl-full rounded-br-full
         border
         border-white/20
         hover:bg-white/20
@@ -36,9 +36,9 @@ const Button: React.FC<ButtonProps> = ({
       `}
     >
       <span className="relative z-10">{children}</span>
-      <div className="relative z-10 w-5 h-5 left-5 rounded-full bg-white flex items-center group-hover:bg-white/20 transition-all duration-300">
+      <div className="relative z-10 w-7 h-7 left-3 rounded-full bg-white flex items-center justify-center group-hover:bg-white/20 transition-all duration-300">
         <svg
-          className="w-16 h-16 text-black transform group-hover:translate-x-0.5 transition-transform duration-300"
+          className="w-5 h-5 text-black transform group-hover:translate-x-0.5 transition-transform duration-300"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"

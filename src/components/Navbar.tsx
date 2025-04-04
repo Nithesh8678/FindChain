@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const Navbar: React.FC = () => {
@@ -9,44 +10,46 @@ const Navbar: React.FC = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex-shrink-0">
-              <img
-                src="./images/logo.png"
-                alt="FindChain Logo"
-                className="h-10 w-auto"
-              />
+              <Link to="/">
+                <img
+                  src="./images/logo.png"
+                  alt="FindChain Logo"
+                  className="h-8 w-auto"
+                />
+              </Link>
             </div>
 
             {/* Navigation Links */}
             <div className="hidden md:block">
               <div className="flex items-center space-x-8">
-                <a
-                  href="#about"
+                <Link
+                  to="/about"
                   className="text-white/90 hover:text-white font-montserrat text-sm font-medium transition-all duration-200 hover:scale-105"
                 >
                   About
-                </a>
-                <a
-                  href="#report-lost"
+                </Link>
+                <Link
+                  to="/report-lost"
                   className="text-white/90 hover:text-white font-montserrat text-sm font-medium transition-all duration-200 hover:scale-105"
                 >
                   Report Lost
-                </a>
-                <a
-                  href="#report-found"
+                </Link>
+                <Link
+                  to="/report-found"
                   className="text-white/90 hover:text-white font-montserrat text-sm font-medium transition-all duration-200 hover:scale-105"
                 >
                   Report Found
-                </a>
-                <a
-                  href="#leaderboard"
+                </Link>
+                <Link
+                  to="/leaderboard"
                   className="text-white/90 hover:text-white font-montserrat text-sm font-medium transition-all duration-200 hover:scale-105"
                 >
                   Leaderboard
-                </a>
+                </Link>
 
                 {/* Dashboard/Profile Icon */}
-                <a
-                  href="#dashboard"
+                <Link
+                  to="/dashboard"
                   className="text-white/90 hover:text-white transition-all duration-200 hover:scale-105"
                   aria-label="Dashboard"
                 >
@@ -64,7 +67,7 @@ const Navbar: React.FC = () => {
                       d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                     />
                   </svg>
-                </a>
+                </Link>
 
                 <ConnectButton.Custom>
                   {({
