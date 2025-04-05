@@ -18,6 +18,7 @@ import Welcome from "./components/Welcome";
 import LoadingScreen from "./components/LoadingScreen";
 import About from "./components/About";
 import Dashboard from "./components/Dashboard";
+import PotentialMatches from "./components/PotentialMatches";
 
 // Protected Route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
@@ -92,6 +93,7 @@ const AppContent: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route path="/potential-matches" element={<PotentialMatches />} />
       </Routes>
     </>
   );

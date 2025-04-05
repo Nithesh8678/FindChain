@@ -18,6 +18,8 @@ import {
   FoundItem,
 } from "../services/itemService";
 import { useAuth } from "../context/AuthContext";
+import AIMatches from "./AIMatches";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -27,6 +29,8 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"lost" | "found">("lost");
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedItem, setSelectedItem] = useState<LostItem | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -84,6 +88,13 @@ const Dashboard: React.FC = () => {
       icon: FiAward,
       color: "text-yellow-400",
     },
+    {
+      label: "AI Matches",
+      value: "View",
+      icon: FiSearch,
+      color: "text-[#03672A]",
+      link: "/potential-matches",
+    },
   ];
 
   const ItemCard: React.FC<{
@@ -134,6 +145,16 @@ const Dashboard: React.FC = () => {
           />
         )}
       </div>
+      {type === "lost" && (
+        <div className="mt-4 flex justify-end">
+          <button
+            onClick={() => setSelectedItem(item as LostItem)}
+            className="px-4 py-2 bg-[#03672A] hover:bg-[#046A29] rounded-lg text-white font-montserrat transition-colors duration-300"
+          >
+            Find Matches
+          </button>
+        </div>
+      )}
     </motion.div>
   );
 
@@ -209,14 +230,17 @@ const Dashboard: React.FC = () => {
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => (
             <motion.div
               key={stat.label}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10"
+              className={`bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10 ${
+                stat.link ? "cursor-pointer hover:border-[#03672A]/50" : ""
+              }`}
+              onClick={stat.link ? () => navigate(stat.link) : undefined}
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -265,6 +289,27 @@ const Dashboard: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {selectedItem && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-nasalization text-white">
+                AI-Powered Matches
+              </h2>
+              <button
+                onClick={() => setSelectedItem(null)}
+                className="text-white/60 hover:text-white font-montserrat"
+              >
+                Close
+              </button>
+            </div>
+            <AIMatches lostItem={selectedItem} foundItems={foundItems} />
+          </motion.div>
+        )}
 
         <AnimatePresence mode="wait">
           <motion.div
