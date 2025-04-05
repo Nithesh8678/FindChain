@@ -64,22 +64,19 @@ const ReportLost: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setError("");
     setIsSubmitting(true);
 
     try {
-      // Validate form
+      // Validate form data
       if (
         !formData.itemName ||
         !formData.category ||
         !formData.description ||
         !formData.dateLost ||
-        !formData.timeLost ||
-        !formData.location ||
-        !formData.contactPhone ||
-        !formData.contactEmail
+        !formData.location
       ) {
         throw new Error("Please fill in all required fields");
       }
@@ -105,8 +102,24 @@ const ReportLost: React.FC = () => {
       // Create a clean data object without the image
       const { image, ...cleanData } = formData;
 
+      // Ensure all required fields are present
+      const itemData = {
+        name: cleanData.itemName || "",
+        category: cleanData.category || "",
+        description: cleanData.description || "",
+        dateLost: cleanData.dateLost || new Date().toISOString(),
+        location: cleanData.location || "",
+        contactInfo: {
+          email: cleanData.contactEmail || "",
+          phone: cleanData.contactPhone || "",
+        },
+        reward: cleanData.rewardAmount ? parseFloat(cleanData.rewardAmount) : 0,
+      };
+
+      console.log("Submitting data:", itemData);
+
       // Submit to Firebase
-      await reportLostItem(cleanData, image, tempUserId);
+      await reportLostItem(itemData, image, tempUserId);
 
       // Show success message and redirect
       navigate("/dashboard", {
@@ -119,7 +132,7 @@ const ReportLost: React.FC = () => {
       setError(
         err instanceof Error
           ? err.message
-          : "An error occurred while submitting the report"
+          : "An error occurred while submitting the form"
       );
     } finally {
       setIsSubmitting(false);

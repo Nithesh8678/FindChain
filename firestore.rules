@@ -1,22 +1,59 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read access to all items
-    match /items/{itemId} {
-      allow read: if true;
-      
-      // Allow write access for creating new items
-      allow create: if true;
-      
-      // Allow update/delete only by the item owner
-      allow update, delete: if request.auth != null && 
-        (resource.data.userId == request.auth.uid || 
-         resource.data.userId == "temp-" + request.time.toMillis());
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
     }
     
-    // Default deny all other access
-    match /{document=**} {
-      allow read, write: if false;
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isValidLostItem() {
+      return request.resource.data.keys().hasAll(['name', 'category', 'description', 'dateLost', 'location', 'userId', 'status', 'createdAt']) &&
+             request.resource.data.name is string &&
+             request.resource.data.category is string &&
+             request.resource.data.description is string &&
+             request.resource.data.dateLost is string &&
+             request.resource.data.location is string &&
+             request.resource.data.userId is string &&
+             request.resource.data.status in ['pending', 'found', 'closed'] &&
+             request.resource.data.createdAt is timestamp;
+    }
+    
+    function isValidFoundItem() {
+      return request.resource.data.keys().hasAll(['name', 'category', 'description', 'dateFound', 'location', 'userId', 'status', 'createdAt']) &&
+             request.resource.data.name is string &&
+             request.resource.data.category is string &&
+             request.resource.data.description is string &&
+             request.resource.data.dateFound is string &&
+             request.resource.data.location is string &&
+             request.resource.data.userId is string &&
+             request.resource.data.status in ['pending', 'claimed', 'closed'] &&
+             request.resource.data.createdAt is timestamp;
+    }
+
+    // Lost Items Collection Rules
+    match /lostItems/{itemId} {
+      allow read: if true;  // Anyone can read lost items
+      allow create: if true;  // Allow creation for testing
+      allow update: if true;  // Allow updates for testing
+      allow delete: if true;  // Allow deletion for testing
+    }
+
+    // Found Items Collection Rules
+    match /foundItems/{itemId} {
+      allow read: if true;  // Anyone can read found items
+      allow create: if true;  // Allow creation for testing
+      allow update: if true;  // Allow updates for testing
+      allow delete: if true;  // Allow deletion for testing
+    }
+
+    // User Profiles Collection Rules
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if true;  // Allow all writes for testing
     }
   }
 } 

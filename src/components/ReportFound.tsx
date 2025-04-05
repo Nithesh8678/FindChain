@@ -55,22 +55,19 @@ const ReportFound: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setError("");
     setIsSubmitting(true);
 
     try {
-      // Validate form
+      // Validate form data
       if (
         !formData.itemName ||
         !formData.category ||
         !formData.description ||
         !formData.dateFound ||
-        !formData.timeFound ||
-        !formData.location ||
-        !formData.contactPhone ||
-        !formData.contactEmail
+        !formData.location
       ) {
         throw new Error("Please fill in all required fields");
       }
@@ -96,21 +93,36 @@ const ReportFound: React.FC = () => {
       // Create a clean data object without the image
       const { image, ...cleanData } = formData;
 
+      // Ensure all required fields are present
+      const itemData = {
+        name: cleanData.itemName || "",
+        category: cleanData.category || "",
+        description: cleanData.description || "",
+        dateFound: cleanData.dateFound || new Date().toISOString(),
+        location: cleanData.location || "",
+        contactInfo: {
+          email: cleanData.contactEmail || "",
+          phone: cleanData.contactPhone || "",
+        },
+      };
+
+      console.log("Submitting data:", itemData);
+
       // Submit to Firebase
-      await reportFoundItem(cleanData, image, tempUserId);
+      await reportFoundItem(itemData, image, tempUserId);
 
       // Show success message and redirect
       navigate("/dashboard", {
         state: {
           message:
-            "Thank you for reporting a found item! We'll help connect you with its owner.",
+            "Item reported successfully! We'll notify you if someone claims it.",
         },
       });
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "An error occurred while submitting the report"
+          : "An error occurred while submitting the form"
       );
     } finally {
       setIsSubmitting(false);

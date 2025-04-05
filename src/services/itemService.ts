@@ -9,6 +9,8 @@ import {
   startAfter,
   DocumentData,
   QueryDocumentSnapshot,
+  updateDoc,
+  doc,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
 import uploadToCloudinary from "./cloudinaryService";
@@ -16,36 +18,44 @@ import uploadToCloudinary from "./cloudinaryService";
 // Types
 export interface LostItem {
   id?: string;
-  itemName: string;
+  name: string;
   category: string;
   description: string;
   dateLost: string;
-  timeLost: string;
   location: string;
-  contactPhone: string;
-  contactEmail: string;
-  rewardAmount?: string;
   imageUrl?: string;
-  status: "lost";
-  createdAt: Date;
   userId: string;
+  status: "pending" | "found" | "closed";
+  createdAt: Date;
+  reward?: number;
+  contactInfo?: {
+    email: string;
+    phone?: string;
+  };
 }
 
 export interface FoundItem {
   id?: string;
-  itemName: string;
+  name: string;
   category: string;
   description: string;
   dateFound: string;
-  timeFound: string;
   location: string;
-  contactPhone: string;
-  contactEmail: string;
   imageUrl?: string;
-  status: "found";
-  createdAt: Date;
   userId: string;
+  status: "pending" | "claimed" | "closed";
+  createdAt: Date;
+  contactInfo?: {
+    email: string;
+    phone?: string;
+  };
 }
+
+// Lost Items Collection
+const lostItemsCollection = collection(db, "lostItems");
+
+// Found Items Collection
+const foundItemsCollection = collection(db, "foundItems");
 
 // Report Lost Item
 export const reportLostItem = async (
@@ -66,25 +76,39 @@ export const reportLostItem = async (
       }
     }
 
+    // Validate required fields
+    if (
+      !data.name ||
+      !data.category ||
+      !data.description ||
+      !data.dateLost ||
+      !data.location
+    ) {
+      throw new Error("Missing required fields");
+    }
+
     // Create a clean object with only the data we want to store in Firestore
     const firestoreData = {
-      itemName: data.itemName,
-      category: data.category,
-      description: data.description,
-      dateLost: data.dateLost,
-      timeLost: data.timeLost,
-      location: data.location,
-      contactPhone: data.contactPhone,
-      contactEmail: data.contactEmail,
-      rewardAmount: data.rewardAmount,
-      imageUrl: imageUrl, // Only the URL string, not the File object
-      status: "lost" as const,
+      name: data.name || "",
+      category: data.category || "",
+      description: data.description || "",
+      dateLost: data.dateLost || new Date().toISOString(),
+      location: data.location || "",
+      contactInfo: {
+        email: data.contactInfo?.email || "",
+        phone: data.contactInfo?.phone || "",
+      },
+      reward: data.reward || 0,
+      imageUrl: imageUrl || "",
+      status: "pending" as const,
       createdAt: new Date(),
-      userId: userId,
+      userId: userId || "anonymous",
     };
 
+    console.log("Saving to Firestore:", firestoreData);
+
     // Add document to Firestore
-    const docRef = await addDoc(collection(db, "items"), firestoreData);
+    const docRef = await addDoc(lostItemsCollection, firestoreData);
     return docRef.id;
   } catch (error) {
     console.error("Error reporting lost item:", error);
@@ -111,24 +135,38 @@ export const reportFoundItem = async (
       }
     }
 
+    // Validate required fields
+    if (
+      !data.name ||
+      !data.category ||
+      !data.description ||
+      !data.dateFound ||
+      !data.location
+    ) {
+      throw new Error("Missing required fields");
+    }
+
     // Create a clean object with only the data we want to store in Firestore
     const firestoreData = {
-      itemName: data.itemName,
-      category: data.category,
-      description: data.description,
-      dateFound: data.dateFound,
-      timeFound: data.timeFound,
-      location: data.location,
-      contactPhone: data.contactPhone,
-      contactEmail: data.contactEmail,
-      imageUrl: imageUrl, // Only the URL string, not the File object
-      status: "found" as const,
+      name: data.name || "",
+      category: data.category || "",
+      description: data.description || "",
+      dateFound: data.dateFound || new Date().toISOString(),
+      location: data.location || "",
+      contactInfo: {
+        email: data.contactInfo?.email || "",
+        phone: data.contactInfo?.phone || "",
+      },
+      imageUrl: imageUrl || "",
+      status: "pending" as const,
       createdAt: new Date(),
-      userId: userId,
+      userId: userId || "anonymous",
     };
 
+    console.log("Saving to Firestore:", firestoreData);
+
     // Add document to Firestore
-    const docRef = await addDoc(collection(db, "items"), firestoreData);
+    const docRef = await addDoc(foundItemsCollection, firestoreData);
     return docRef.id;
   } catch (error) {
     console.error("Error reporting found item:", error);
@@ -143,8 +181,8 @@ export const getLostItems = async (
 ) => {
   try {
     let q = query(
-      collection(db, "items"),
-      where("status", "==", "lost"),
+      lostItemsCollection,
+      where("status", "==", "pending"),
       orderBy("createdAt", "desc"),
       limit(itemsPerPage)
     );
@@ -174,8 +212,8 @@ export const getFoundItems = async (
 ) => {
   try {
     let q = query(
-      collection(db, "items"),
-      where("status", "==", "found"),
+      foundItemsCollection,
+      where("status", "==", "pending"),
       orderBy("createdAt", "desc"),
       limit(itemsPerPage)
     );
@@ -198,41 +236,92 @@ export const getFoundItems = async (
   }
 };
 
-// Search Items
-export const searchItems = async (
-  searchTerm: string,
-  status: "lost" | "found"
-) => {
+// Search Lost Items
+export const searchLostItems = async (
+  searchTerm: string
+): Promise<LostItem[]> => {
   try {
     const q = query(
-      collection(db, "items"),
-      where("status", "==", status),
-      where("itemName", ">=", searchTerm),
-      where("itemName", "<=", searchTerm + "\uf8ff"),
-      orderBy("itemName"),
-      limit(10)
+      lostItemsCollection,
+      where("status", "==", "pending"),
+      orderBy("createdAt", "desc"),
+      limit(20)
     );
 
     const querySnapshot = await getDocs(q);
-    const items: (LostItem | FoundItem)[] = [];
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      if (data.status === "lost") {
-        items.push({
-          id: doc.id,
-          ...(data as Omit<LostItem, "id">),
-        } as LostItem);
-      } else {
-        items.push({
-          id: doc.id,
-          ...(data as Omit<FoundItem, "id">),
-        } as FoundItem);
-      }
-    });
+    const items = querySnapshot.docs.map((doc) => ({
+      ...doc.data(),
+      id: doc.id,
+    })) as LostItem[];
 
-    return items;
+    // Client-side filtering for better search experience
+    return items.filter(
+      (item) =>
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.category.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   } catch (error) {
-    console.error("Error searching items:", error);
+    console.error("Error searching lost items:", error);
+    throw error;
+  }
+};
+
+// Search Found Items
+export const searchFoundItems = async (
+  searchTerm: string
+): Promise<FoundItem[]> => {
+  try {
+    const q = query(
+      foundItemsCollection,
+      where("status", "==", "pending"),
+      orderBy("createdAt", "desc"),
+      limit(20)
+    );
+
+    const querySnapshot = await getDocs(q);
+    const items = querySnapshot.docs.map((doc) => ({
+      ...doc.data(),
+      id: doc.id,
+    })) as FoundItem[];
+
+    // Client-side filtering for better search experience
+    return items.filter(
+      (item) =>
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.category.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  } catch (error) {
+    console.error("Error searching found items:", error);
+    throw error;
+  }
+};
+
+// Update Lost Item Status
+export const updateLostItemStatus = async (
+  itemId: string,
+  status: LostItem["status"]
+): Promise<void> => {
+  try {
+    const itemRef = doc(db, "lostItems", itemId);
+    await updateDoc(itemRef, { status });
+  } catch (error) {
+    console.error("Error updating lost item status:", error);
+    throw error;
+  }
+};
+
+// Update Found Item Status
+export const updateFoundItemStatus = async (
+  itemId: string,
+  status: FoundItem["status"]
+): Promise<void> => {
+  try {
+    const itemRef = doc(db, "foundItems", itemId);
+    await updateDoc(itemRef, { status });
+  } catch (error) {
+    console.error("Error updating found item status:", error);
     throw error;
   }
 };

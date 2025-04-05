@@ -17,6 +17,7 @@ import Auth from "./components/Auth";
 import Welcome from "./components/Welcome";
 import LoadingScreen from "./components/LoadingScreen";
 import About from "./components/About";
+import Dashboard from "./components/Dashboard";
 
 // Protected Route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
@@ -87,10 +88,7 @@ const AppContent: React.FC = () => {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <div className="min-h-screen bg-[#030502] text-white p-8">
-                <h1 className="text-4xl font-nasalization mb-8">Dashboard</h1>
-                <p className="font-montserrat">Welcome to your dashboard!</p>
-              </div>
+              <Dashboard />
             </ProtectedRoute>
           }
         />
