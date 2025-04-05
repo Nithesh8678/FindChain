@@ -19,31 +19,40 @@ import {
   FiX,
   FiTag,
   FiChevronRight,
+  FiImage,
 } from "react-icons/fi";
 import {
-  reportFoundItem,
   getFoundItems,
   FoundItem,
+  submitFoundItem,
+  getAllLostItems,
+  LostItem,
 } from "../services/itemService";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 // Move form state and logic to a custom hook
 const useFoundItemForm = (navigate: ReturnType<typeof useNavigate>) => {
   const [formData, setFormData] = useState({
-    itemName: "",
+    name: "",
     category: "",
     description: "",
-    dateFound: "",
-    timeFound: "",
     location: "",
-    contactPhone: "",
-    contactEmail: "",
     image: null as File | null,
+    contactInfo: {
+      email: "",
+      phone: "",
+    },
+    userId: "",
+    createdAt: new Date(),
   });
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [formStep, setFormStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -59,75 +68,26 @@ const useFoundItemForm = (navigate: ReturnType<typeof useNavigate>) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setIsSubmitting(true);
+    if (!user) {
+      setError("Please sign in to report a found item");
+      return;
+    }
 
     try {
-      // Validate form data
-      if (
-        !formData.itemName ||
-        !formData.category ||
-        !formData.description ||
-        !formData.dateFound ||
-        !formData.location
-      ) {
-        throw new Error("Please fill in all required fields");
-      }
-
-      // Validate image if provided
-      if (formData.image) {
-        const validTypes = ["image/jpeg", "image/png", "image/jpg"];
-        if (!validTypes.includes(formData.image.type)) {
-          throw new Error(
-            `Invalid image type. Only ${validTypes.join(", ")} are allowed.`
-          );
-        }
-
-        // Check file size (max 5MB)
-        if (formData.image.size > 5 * 1024 * 1024) {
-          throw new Error("Image size too large. Maximum size is 5MB.");
-        }
-      }
-
-      // Get temporary userId (replace this with actual user authentication)
-      const tempUserId = "temp-" + Date.now();
-
-      // Create a clean data object without the image
-      const { image, ...cleanData } = formData;
-
-      // Ensure all required fields are present
+      setLoading(true);
+      setError(null);
       const itemData = {
-        name: cleanData.itemName || "",
-        category: cleanData.category || "",
-        description: cleanData.description || "",
-        dateFound: cleanData.dateFound || new Date().toISOString(),
-        location: cleanData.location || "",
-        contactInfo: {
-          email: cleanData.contactEmail || "",
-          phone: cleanData.contactPhone || "",
-        },
+        ...formData,
+        userId: user.uid,
+        createdAt: new Date(),
       };
-
-      console.log("Submitting data:", itemData);
-
-      // Submit to Firebase
-      await reportFoundItem(itemData, image, tempUserId);
-
-      // Show success message and redirect
-      navigate("/dashboard", {
-        state: {
-          message:
-            "Item reported successfully! We'll notify you if someone claims it.",
-        },
-      });
+      await submitFoundItem(user.uid, itemData);
+      navigate("/dashboard");
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "An error occurred while submitting the form"
-      );
+      console.error("Error submitting found item:", err);
+      setError(err instanceof Error ? err.message : "Failed to submit item");
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
@@ -141,6 +101,9 @@ const useFoundItemForm = (navigate: ReturnType<typeof useNavigate>) => {
     isSubmitting,
     error,
     setError,
+    loading,
+    success,
+    setSuccess,
     handleImageChange,
     handleSubmit,
   };
@@ -215,9 +178,9 @@ const ReportForm: React.FC<{
                 </label>
                 <input
                   type="text"
-                  value={formData.itemName}
+                  value={formData.name}
                   onChange={(e) =>
-                    setFormData({ ...formData, itemName: e.target.value })
+                    setFormData({ ...formData, name: e.target.value })
                   }
                   className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-[#03672A] transition-colors duration-300 outline-none font-montserrat"
                   placeholder="Enter item name"
@@ -229,24 +192,21 @@ const ReportForm: React.FC<{
                 <label className="block text-white/80 mb-2 font-montserrat">
                   Category
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <select
+                  value={formData.category}
+                  onChange={(e) =>
+                    setFormData({ ...formData, category: e.target.value })
+                  }
+                  className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:border-[#03672A] transition-colors duration-300"
+                  required
+                >
+                  <option value="">Select a category</option>
                   {categories.map((category) => (
-                    <button
-                      key={category}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, category })}
-                      className={`px-4 py-2 rounded-xl border transition-all duration-300 font-montserrat text-sm
-                        ${
-                          formData.category === category
-                            ? "border-[#03672A] bg-[#03672A]/20 text-white"
-                            : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
-                        }
-                        `}
-                    >
+                    <option key={category} value={category}>
                       {category}
-                    </button>
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
 
               {/* Description */}
@@ -273,9 +233,12 @@ const ReportForm: React.FC<{
                   </label>
                   <input
                     type="date"
-                    value={formData.dateFound}
+                    value={formData.createdAt.toISOString().split("T")[0]}
                     onChange={(e) =>
-                      setFormData({ ...formData, dateFound: e.target.value })
+                      setFormData({
+                        ...formData,
+                        createdAt: new Date(e.target.value),
+                      })
                     }
                     className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-[#03672A] transition-colors duration-300 outline-none font-montserrat"
                   />
@@ -287,9 +250,21 @@ const ReportForm: React.FC<{
                   </label>
                   <input
                     type="time"
-                    value={formData.timeFound}
+                    value={
+                      formData.createdAt
+                        .toISOString()
+                        .split("T")[1]
+                        .split(".")[0]
+                    }
                     onChange={(e) =>
-                      setFormData({ ...formData, timeFound: e.target.value })
+                      setFormData({
+                        ...formData,
+                        createdAt: new Date(
+                          formData.createdAt.toISOString().split("T")[0] +
+                            "T" +
+                            e.target.value
+                        ),
+                      })
                     }
                     className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-[#03672A] transition-colors duration-300 outline-none font-montserrat"
                   />
@@ -367,9 +342,15 @@ const ReportForm: React.FC<{
                 </label>
                 <input
                   type="tel"
-                  value={formData.contactPhone}
+                  value={formData.contactInfo.phone}
                   onChange={(e) =>
-                    setFormData({ ...formData, contactPhone: e.target.value })
+                    setFormData({
+                      ...formData,
+                      contactInfo: {
+                        ...formData.contactInfo,
+                        phone: e.target.value,
+                      },
+                    })
                   }
                   className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-[#03672A] transition-colors duration-300 outline-none font-montserrat"
                   placeholder="Enter your phone number"
@@ -383,9 +364,15 @@ const ReportForm: React.FC<{
                 </label>
                 <input
                   type="email"
-                  value={formData.contactEmail}
+                  value={formData.contactInfo.email}
                   onChange={(e) =>
-                    setFormData({ ...formData, contactEmail: e.target.value })
+                    setFormData({
+                      ...formData,
+                      contactInfo: {
+                        ...formData.contactInfo,
+                        email: e.target.value,
+                      },
+                    })
                   }
                   className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-[#03672A] transition-colors duration-300 outline-none font-montserrat"
                   placeholder="Enter your email address"
@@ -496,7 +483,7 @@ const FoundItemCard = React.memo(({ item }: { item: FoundItem }) => (
           </div>
           <div className="flex items-center gap-1">
             <FiCalendar className="text-[#03672A]" />
-            <span>{new Date(item.dateFound).toLocaleDateString()}</span>
+            <span>{new Date(item.createdAt).toLocaleDateString()}</span>
           </div>
         </div>
         <div className="mt-3 flex items-center gap-1 text-[#03672A] font-montserrat text-sm">
@@ -607,6 +594,8 @@ const ReportFound: React.FC = () => {
   const [isLoadingRelated, setIsLoadingRelated] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const formState = useFoundItemForm(navigate);
+  const [allLostItems, setAllLostItems] = useState<LostItem[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   useEffect(() => {
     const fetchFoundItems = async () => {
@@ -624,6 +613,22 @@ const ReportFound: React.FC = () => {
     };
 
     fetchFoundItems();
+  }, []);
+
+  useEffect(() => {
+    const fetchLostItems = async () => {
+      try {
+        const items = await getAllLostItems();
+        setAllLostItems(items);
+      } catch (err) {
+        console.error("Error fetching lost items:", err);
+        formState.setError(
+          "Failed to load lost items. Please try again later."
+        );
+      }
+    };
+
+    fetchLostItems();
   }, []);
 
   // Close suggestions when clicking outside
@@ -703,6 +708,22 @@ const ReportFound: React.FC = () => {
     setSearchTerm(suggestion);
     setShowSuggestions(false);
   };
+
+  const filteredLostItems = allLostItems.filter((item) => {
+    const matchesSearch =
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.location.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesCategory =
+      selectedCategory === "all" || item.category === selectedCategory;
+
+    return matchesSearch && matchesCategory;
+  });
+
+  const categories = Array.from(
+    new Set(allLostItems.map((item) => item.category))
+  );
 
   if (loading) {
     return (
@@ -794,7 +815,7 @@ const ReportFound: React.FC = () => {
 
   return (
     <div className="min-h-screen pt-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Animated background with gradient */}
+      {/* Animated background */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#030502] via-[#03672A] to-[#046A29] opacity-90 z-0"></div>
 
       {/* Animated background pattern */}
@@ -808,169 +829,138 @@ const ReportFound: React.FC = () => {
         ></div>
       </div>
 
-      {/* Floating particles */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        {[...Array(20)].map((_, i) => (
+      <div className="max-w-7xl mx-auto relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Report Found Form */}
           <motion.div
-            key={i}
-            className="absolute w-2 h-2 rounded-full bg-white/20"
-            initial={{
-              x: Math.random() * window.innerWidth,
-              y: Math.random() * window.innerHeight,
-              scale: Math.random() * 0.5 + 0.5,
-            }}
-            animate={{
-              y: [null, Math.random() * -100],
-              opacity: [0.2, 0.8, 0.2],
-            }}
-            transition={{
-              duration: Math.random() * 10 + 10,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          />
-        ))}
-      </div>
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20"
+          >
+            <h2 className="text-2xl font-nasalization text-white mb-6">
+              Report Found Item
+            </h2>
+            <form onSubmit={formState.handleSubmit} className="space-y-4">
+              {/* ... existing form fields ... */}
 
-      <div className="max-w-7xl mx-auto mt-10 relative z-10">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
-          <h1 className="text-4xl font-nasalization text-white drop-shadow-lg">
-            Found Items
-          </h1>
-          <div className="relative w-full md:w-96" ref={searchRef}>
-            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
-            <input
-              type="text"
-              placeholder="Search found items..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              onFocus={() => searchTerm.length >= 2 && setShowSuggestions(true)}
-              className="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:border-[#03672A] transition-colors duration-300 font-montserrat backdrop-blur-sm"
-            />
+              <div>
+                <label className="block text-white/80 font-montserrat mb-2">
+                  Category
+                </label>
+                <select
+                  value={formState.formData.category}
+                  onChange={(e) =>
+                    formState.setFormData({
+                      ...formState.formData,
+                      category: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:border-[#03672A] transition-colors duration-300"
+                  required
+                >
+                  <option value="">Select a category</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            {/* AI-powered search suggestions */}
-            <AnimatePresence>
-              {showSuggestions &&
-                (suggestions.length > 0 || relatedItems.length > 0) && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute z-10 w-full mt-2 bg-[#030502]/95 backdrop-blur-md border border-[#03672A]/30 rounded-xl overflow-hidden shadow-xl"
-                  >
-                    {suggestions.length > 0 && (
-                      <>
-                        <div className="p-2 text-white/60 text-sm font-montserrat border-b border-white/10">
-                          AI Suggestions
-                        </div>
-                        <ul className="max-h-60 overflow-y-auto">
-                          {suggestions.map((suggestion, index) => (
-                            <motion.li
-                              key={index}
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: index * 0.05 }}
-                              className="flex items-center px-4 py-3 hover:bg-[#03672A]/20 cursor-pointer transition-colors duration-200"
-                              onClick={() => handleSuggestionClick(suggestion)}
-                            >
-                              <FiSearch className="mr-3 text-[#03672A]" />
-                              <span className="font-montserrat text-white/80">
-                                {suggestion}
-                              </span>
-                              <FiChevronRight className="ml-auto text-white/40" />
-                            </motion.li>
-                          ))}
-                        </ul>
-                      </>
+              {/* ... rest of the form fields ... */}
+            </form>
+          </motion.div>
+
+          {/* Lost Items List */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20"
+          >
+            <h2 className="text-2xl font-nasalization text-white mb-6">
+              Recently Lost Items
+            </h2>
+
+            {/* Search and Filter */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <div className="flex-1 relative">
+                <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                <input
+                  type="text"
+                  placeholder="Search lost items..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-12 pr-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:border-[#03672A] transition-colors duration-300"
+                />
+              </div>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:border-[#03672A] transition-colors duration-300"
+              >
+                <option value="all">All Categories</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Lost Items Grid */}
+            <div className="grid gap-4 max-h-[600px] overflow-y-auto pr-2">
+              {filteredLostItems.map((item) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-[#03672A]/50 transition-colors duration-300"
+                >
+                  <div className="flex items-start gap-4">
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-20 h-20 object-cover rounded-lg"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 bg-gradient-to-br from-[#03672A]/30 to-[#046A29]/30 rounded-lg flex items-center justify-center">
+                        <FiImage className="w-8 h-8 text-white/40" />
+                      </div>
                     )}
-
-                    {relatedItems.length > 0 && (
-                      <>
-                        <div className="p-2 text-white/60 text-sm font-montserrat border-b border-white/10">
-                          Related Items
+                    <div className="flex-1">
+                      <h3 className="text-lg font-nasalization text-white mb-1">
+                        {item.name}
+                      </h3>
+                      <div className="flex items-center gap-2 text-white/60 mb-2">
+                        <span className="px-2 py-1 bg-[#03672A]/20 text-[#03672A] rounded-md text-xs font-montserrat">
+                          {item.category}
+                        </span>
+                      </div>
+                      <p className="text-white/80 font-montserrat text-sm mb-2 line-clamp-2">
+                        {item.description}
+                      </p>
+                      <div className="flex flex-wrap gap-4 text-white/60 text-sm">
+                        <div className="flex items-center gap-1">
+                          <FiMapPin className="text-[#03672A]" />
+                          <span className="font-montserrat">
+                            {item.location}
+                          </span>
                         </div>
-                        <ul className="max-h-60 overflow-y-auto">
-                          {isLoadingRelated ? (
-                            <li className="px-4 py-3 text-white/60 font-montserrat">
-                              Loading related items...
-                            </li>
-                          ) : (
-                            relatedItems.map((item, index) => (
-                              <motion.li
-                                key={item.id}
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: index * 0.05 }}
-                                className="flex items-center px-4 py-3 hover:bg-[#03672A]/20 cursor-pointer transition-colors duration-200"
-                                onClick={() => {
-                                  setSearchTerm(item.name);
-                                  setShowSuggestions(false);
-                                }}
-                              >
-                                {item.imageUrl ? (
-                                  <img
-                                    src={item.imageUrl}
-                                    alt={item.name}
-                                    className="w-10 h-10 rounded-md object-cover mr-3"
-                                  />
-                                ) : (
-                                  <div className="w-10 h-10 rounded-md bg-white/10 flex items-center justify-center mr-3">
-                                    <FiTag className="text-[#03672A]" />
-                                  </div>
-                                )}
-                                <div className="flex-1">
-                                  <div className="font-montserrat text-white/80">
-                                    {item.name}
-                                  </div>
-                                  <div className="text-xs text-white/40 font-montserrat">
-                                    {item.category}
-                                  </div>
-                                </div>
-                                <FiChevronRight className="text-white/40" />
-                              </motion.li>
-                            ))
-                          )}
-                        </ul>
-                      </>
-                    )}
-                  </motion.div>
-                )}
-            </AnimatePresence>
-          </div>
+                        <div className="flex items-center gap-1">
+                          <FiCalendar className="text-[#03672A]" />
+                          <span className="font-montserrat">
+                            {new Date(item.dateLost).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredItems.map((item) => (
-            <FoundItemCard key={item.id} item={item} />
-          ))}
-        </div>
-
-        {filteredItems.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-white/60 font-montserrat text-lg">
-              No found items found. Try adjusting your search or report a new
-              item.
-            </p>
-          </div>
-        )}
-
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setShowForm(true)}
-          className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-r from-[#03672A] to-[#046A29] hover:from-[#046A29] hover:to-[#03672A] rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-300"
-        >
-          <FiPlus className="w-8 h-8" />
-        </motion.button>
-
-        <AnimatePresence>
-          {showForm && (
-            <ReportForm
-              onClose={() => setShowForm(false)}
-              formState={formState}
-            />
-          )}
-        </AnimatePresence>
       </div>
     </div>
   );

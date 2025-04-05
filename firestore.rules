@@ -34,26 +34,26 @@ service cloud.firestore {
              request.resource.data.createdAt is timestamp;
     }
 
-    // Lost Items Collection Rules
-    match /lostItems/{itemId} {
-      allow read: if true;  // Anyone can read lost items
-      allow create: if true;  // Allow creation for testing
-      allow update: if true;  // Allow updates for testing
-      allow delete: if true;  // Allow deletion for testing
-    }
-
-    // Found Items Collection Rules
-    match /foundItems/{itemId} {
-      allow read: if true;  // Anyone can read found items
-      allow create: if true;  // Allow creation for testing
-      allow update: if true;  // Allow updates for testing
-      allow delete: if true;  // Allow deletion for testing
-    }
-
-    // User Profiles Collection Rules
+    // User Collection Rules
     match /users/{userId} {
       allow read: if true;
-      allow write: if true;  // Allow all writes for testing
+      allow write: if isOwner(userId);
+      
+      // Lost Items Subcollection Rules
+      match /lostItems/{itemId} {
+        allow read: if true;
+        allow create: if isOwner(userId) && isValidLostItem();
+        allow update: if isOwner(userId);
+        allow delete: if isOwner(userId);
+      }
+      
+      // Found Items Subcollection Rules
+      match /foundItems/{itemId} {
+        allow read: if true;
+        allow create: if isOwner(userId) && isValidFoundItem();
+        allow update: if isOwner(userId);
+        allow delete: if isOwner(userId);
+      }
     }
   }
 } 

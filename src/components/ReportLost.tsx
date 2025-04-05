@@ -22,11 +22,12 @@ import {
 } from "react-icons/fi";
 import { FaEthereum } from "react-icons/fa";
 import {
-  reportLostItem,
   getLostItems,
   LostItem,
+  submitLostItem,
 } from "../services/itemService";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 // Move form state and logic to a custom hook
 const useLostItemForm = (navigate: ReturnType<typeof useNavigate>) => {
@@ -46,6 +47,9 @@ const useLostItemForm = (navigate: ReturnType<typeof useNavigate>) => {
   const [formStep, setFormStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -68,62 +72,56 @@ const useLostItemForm = (navigate: ReturnType<typeof useNavigate>) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setIsSubmitting(true);
+
+    if (!user) {
+      setError("You must be logged in to report a lost item");
+      return;
+    }
 
     try {
-      if (
-        !formData.itemName ||
-        !formData.category ||
-        !formData.description ||
-        !formData.dateLost ||
-        !formData.location
-      ) {
-        throw new Error("Please fill in all required fields");
-      }
+      setIsSubmitting(true);
+      setLoading(true);
+      setError(null);
 
-      if (formData.image) {
-        const validTypes = ["image/jpeg", "image/png", "image/jpg"];
-        if (!validTypes.includes(formData.image.type)) {
-          throw new Error(
-            `Invalid image type. Only ${validTypes.join(", ")} are allowed.`
-          );
-        }
-        if (formData.image.size > 5 * 1024 * 1024) {
-          throw new Error("Image size too large. Maximum size is 5MB.");
-        }
-      }
-
-      const tempUserId = "temp-" + Date.now();
-      const { image, ...cleanData } = formData;
       const itemData = {
-        name: cleanData.itemName || "",
-        category: cleanData.category || "",
-        description: cleanData.description || "",
-        dateLost: cleanData.dateLost || new Date().toISOString(),
-        location: cleanData.location || "",
-        contactInfo: {
-          email: cleanData.contactEmail || "",
-          phone: cleanData.contactPhone || "",
-        },
-        reward: cleanData.rewardAmount ? parseFloat(cleanData.rewardAmount) : 0,
+        name: formData.itemName,
+        description: formData.description,
+        category: formData.category,
+        location: formData.location,
+        imageUrl: selectedImage || undefined,
+        userId: user.uid,
+        createdAt: new Date(),
       };
 
-      console.log("Submitting data:", itemData);
-      await reportLostItem(itemData, image, tempUserId);
-      navigate("/dashboard", {
-        state: {
-          message:
-            "Item reported successfully! We'll notify you if someone finds it.",
-        },
+      await submitLostItem(user.uid, itemData);
+
+      // Reset form
+      setFormData({
+        itemName: "",
+        category: "",
+        description: "",
+        dateLost: "",
+        timeLost: "",
+        location: "",
+        contactPhone: "",
+        contactEmail: "",
+        rewardAmount: "",
+        image: null,
       });
+      setSelectedImage(null);
+
+      // Show success message
+      setSuccess("Item reported successfully!");
+
+      // Redirect to dashboard after a delay
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 2000);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "An error occurred while submitting the form"
-      );
+      console.error("Error submitting lost item:", err);
+      setError("Failed to submit item. Please try again.");
     } finally {
+      setLoading(false);
       setIsSubmitting(false);
     }
   };
@@ -138,6 +136,9 @@ const useLostItemForm = (navigate: ReturnType<typeof useNavigate>) => {
     isSubmitting,
     error,
     setError,
+    loading,
+    success,
+    setSuccess,
     handleImageChange,
     handleRewardChange,
     handleSubmit,

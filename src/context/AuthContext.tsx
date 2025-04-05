@@ -1,14 +1,23 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { User, AuthError } from "firebase/auth";
-import { auth } from "../config/firebase";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 import {
-  signInWithGoogle,
-  signInWithEmail,
-  registerWithEmail,
-  signOutUser,
-  getUserData,
-} from "../services/authService";
+  User,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+} from "firebase/auth";
+import { auth } from "../config/firebase";
+import { getDoc, doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { generateUniqueUserId } from "../utils/generateUniqueUserId";
+import { db } from "../config/firebase";
 
 interface AuthContextType {
   user: User | null;
@@ -27,123 +36,116 @@ interface AuthContextType {
   clearError: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined
+);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
   const [uniqueId, setUniqueId] = useState<string | null>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
-      if (user) {
-        try {
-          const userData = await getUserData(user.uid);
-          if (userData) {
-            setUniqueId(userData.uniqueId);
-          }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-        }
-      } else {
-        setUniqueId(null);
-      }
       setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
-  const handleGoogleSignIn = async () => {
+  const clearError = () => setError(null);
+
+  const signInWithGoogle = async () => {
     try {
-      setError(null);
       setLoading(true);
-      const user = await signInWithGoogle();
-      const userData = await getUserData(user.uid);
-      if (userData) {
-        setUniqueId(userData.uniqueId);
-        setIsNewUser(true);
-        navigate("/welcome");
-      } else {
-        navigate("/dashboard");
+      setError(null);
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const userDoc = await getDoc(doc(db, "users", result.user.uid));
+      setIsNewUser(!userDoc.exists());
+      if (!userDoc.exists()) {
+        const newUniqueId = await generateUniqueUserId();
+        setUniqueId(newUniqueId);
       }
-    } catch (error) {
-      const authError = error as AuthError;
-      setError(authError.message);
+    } catch (err) {
+      console.error("Error signing in with Google:", err);
+      setError("Failed to sign in with Google. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEmailSignIn = async (email: string, password: string) => {
+  const signInWithEmail = async (email: string, password: string) => {
     try {
-      setError(null);
       setLoading(true);
-      await signInWithEmail(email, password);
-      navigate("/dashboard");
-    } catch (error) {
-      const authError = error as AuthError;
-      setError(authError.message);
+      setError(null);
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEmailRegister = async (
+  const registerWithEmail = async (
     email: string,
     password: string,
     displayName: string
   ) => {
     try {
-      setError(null);
       setLoading(true);
-      const user = await registerWithEmail(email, password, displayName);
-      const userData = await getUserData(user.uid);
-      if (userData) {
-        setUniqueId(userData.uniqueId);
-        setIsNewUser(true);
-        navigate("/welcome");
-      }
-    } catch (error) {
-      const authError = error as AuthError;
-      setError(authError.message);
+      setError(null);
+      const result = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const newUniqueId = await generateUniqueUserId();
+      await setDoc(doc(db, "users", result.user.uid), {
+        displayName,
+        email,
+        uniqueId: newUniqueId,
+        createdAt: serverTimestamp(),
+        lastLogin: serverTimestamp(),
+      });
+      setIsNewUser(true);
+      setUniqueId(newUniqueId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSignOut = async () => {
+  const signOut = async () => {
     try {
-      setError(null);
       setLoading(true);
-      await signOutUser();
-      setUser(null);
-      setUniqueId(null);
+      setError(null);
+      await firebaseSignOut(auth);
       setIsNewUser(false);
-      navigate("/");
-    } catch (error) {
-      const authError = error as AuthError;
-      setError(authError.message);
+      setUniqueId(null);
+    } catch (err) {
+      console.error("Error signing out:", err);
+      setError("Failed to sign out. Please try again.");
     } finally {
       setLoading(false);
     }
   };
-
-  const clearError = () => setError(null);
 
   const value = {
     user,
@@ -151,12 +153,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     error,
     isNewUser,
     uniqueId,
-    signInWithGoogle: handleGoogleSignIn,
-    signInWithEmail: handleEmailSignIn,
-    registerWithEmail: handleEmailRegister,
-    signOut: handleSignOut,
+    signInWithGoogle,
+    signInWithEmail,
+    registerWithEmail,
+    signOut,
     clearError,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
 };
