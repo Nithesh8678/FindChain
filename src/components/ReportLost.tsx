@@ -640,6 +640,30 @@ const ReportLost: React.FC = () => {
   const searchRef = useRef<HTMLDivElement>(null);
   const formState = useLostItemForm(navigate);
 
+  // Fetch related items from the database
+  const fetchRelatedItems = async (terms: string[]) => {
+    if (terms.length === 0) return;
+
+    setIsLoadingRelated(true);
+    try {
+      // Fetch all lost items
+      const response = await getLostItems();
+
+      // Filter items that match any of the suggested terms
+      const related = response.items.filter((item) => {
+        const itemText =
+          `${item.name} ${item.description} ${item.category}`.toLowerCase();
+        return terms.some((term) => itemText.includes(term.toLowerCase()));
+      });
+
+      setRelatedItems(related);
+    } catch (err) {
+      console.error("Error fetching related items:", err);
+    } finally {
+      setIsLoadingRelated(false);
+    }
+  };
+
   useEffect(() => {
     const fetchLostItems = async () => {
       try {
@@ -690,30 +714,6 @@ const ReportLost: React.FC = () => {
       setRelatedItems([]);
     }
   }, [searchTerm]);
-
-  // Fetch related items from the database
-  const fetchRelatedItems = async (terms: string[]) => {
-    if (terms.length === 0) return;
-
-    setIsLoadingRelated(true);
-    try {
-      // Fetch all lost items
-      const response = await getLostItems();
-
-      // Filter items that match any of the suggested terms
-      const related = response.items.filter((item) => {
-        const itemText =
-          `${item.name} ${item.description} ${item.category}`.toLowerCase();
-        return terms.some((term) => itemText.includes(term.toLowerCase()));
-      });
-
-      setRelatedItems(related);
-    } catch (err) {
-      console.error("Error fetching related items:", err);
-    } finally {
-      setIsLoadingRelated(false);
-    }
-  };
 
   const filteredItems = useMemo(() => {
     return lostItems.filter(

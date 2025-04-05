@@ -30,7 +30,7 @@ const Navbar: React.FC = () => {
               </span>
             </Link> */}
             <img
-              src="./images/logo.png"
+              src="/images/logo.png"
               alt="FindChain Logo"
               className="w-10 h-10 cursor-pointer"
               onClick={() => navigate("/")}

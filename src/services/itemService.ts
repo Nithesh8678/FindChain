@@ -44,6 +44,7 @@ export interface FoundItem {
   userId: string;
   status: "pending" | "claimed" | "closed";
   createdAt: Date;
+  reward?: number;
   contactInfo?: {
     email: string;
     phone?: string;
