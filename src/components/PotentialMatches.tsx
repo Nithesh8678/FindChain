@@ -7,7 +7,6 @@ import {
   FiTag,
   FiX,
   FiAward,
-  FiInfo,
 } from "react-icons/fi";
 import {
   LostItem,

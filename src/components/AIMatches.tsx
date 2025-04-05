@@ -1,19 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import {
-  FiSearch,
-  FiMapPin,
-  FiCalendar,
-  FiTag,
-  FiX,
-  FiAward,
-} from "react-icons/fi";
-import {
-  LostItem,
-  FoundItem,
-  getLostItems,
-  getFoundItems,
-} from "../services/itemService";
+import { FiMapPin, FiCalendar, FiTag, FiX, FiAward } from "react-icons/fi";
+import { LostItem, FoundItem } from "../services/itemService";
 import { findPotentialMatches } from "../services/matchService";
 
 interface MatchResult {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSpring, animated } from "react-spring";
+import { useSpring } from "react-spring";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -140,8 +140,11 @@ const Auth: React.FC = () => {
       )}
 
       {/* Auth form */}
-      <animated.div
-        style={formSpring}
+      <div
+        style={{
+          opacity: formSpring.opacity.get(),
+          transform: formSpring.transform.get(),
+        }}
         className="relative z-10 w-full max-w-md p-8 bg-[#030502]/80 backdrop-blur-lg rounded-xl border border-[#03672A]/30 shadow-2xl"
       >
         <div className="text-center mb-8">
@@ -310,7 +313,7 @@ const Auth: React.FC = () => {
               : "Already have an account? Sign in"}
           </button>
         </div>
-      </animated.div>
+      </div>
     </div>
   );
 };

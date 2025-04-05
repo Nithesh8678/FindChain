@@ -6,17 +6,11 @@ import {
   getDocs,
   orderBy,
   limit,
-  startAfter,
-  DocumentData,
-  QueryDocumentSnapshot,
   updateDoc,
   doc,
-  getDoc,
-  deleteDoc,
-  Timestamp,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "../config/firebase";
+
+import { db } from "../config/firebase";
 import uploadToCloudinary from "./cloudinaryService";
 
 // Types
