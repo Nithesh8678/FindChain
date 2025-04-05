@@ -105,18 +105,23 @@ const Dashboard: React.FC = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10 hover:border-[#03672A]/50 transition-all duration-300"
+      whileHover={{
+        y: -5,
+        boxShadow: "0 10px 25px -5px rgba(3, 103, 42, 0.3)",
+      }}
+      className="bg-white/10 backdrop-blur-md rounded-xl overflow-hidden border border-white/20 hover:border-[#03672A]/50 transition-all duration-300"
     >
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between p-6">
         <div className="flex-1">
           <h3 className="text-xl font-nasalization text-white mb-2">
             {item.name}
           </h3>
           <div className="flex items-center gap-2 text-white/60 mb-2">
-            <FiTag className="text-[#03672A]" />
-            <span className="font-montserrat">{item.category}</span>
+            <span className="px-2 py-1 bg-[#03672A]/20 text-[#03672A] rounded-md text-xs font-montserrat">
+              {item.category}
+            </span>
           </div>
-          <p className="text-white/80 font-montserrat mb-4">
+          <p className="text-white/80 font-montserrat mb-4 line-clamp-2">
             {item.description}
           </p>
           <div className="flex flex-wrap gap-4 text-white/60">
@@ -136,20 +141,29 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-        {item.imageUrl && (
-          <motion.img
+        {item.imageUrl ? (
+          <motion.div
             whileHover={{ scale: 1.05 }}
-            src={item.imageUrl}
-            alt={item.name}
-            className="w-24 h-24 object-cover rounded-lg ml-4"
-          />
+            className="w-24 h-24 overflow-hidden rounded-lg ml-4"
+          >
+            <img
+              src={item.imageUrl}
+              alt={item.name}
+              className="w-full h-full object-cover"
+            />
+          </motion.div>
+        ) : (
+          <div className="w-24 h-24 bg-gradient-to-br from-[#03672A]/30 to-[#046A29]/30 rounded-lg ml-4 flex items-center justify-center">
+            <FiTag className="w-8 h-8 text-white/40" />
+          </div>
         )}
       </div>
+
       {type === "lost" && (
-        <div className="mt-4 flex justify-end">
+        <div className="mt-4 flex justify-end p-6 pt-0">
           <button
             onClick={() => setSelectedItem(item as LostItem)}
-            className="px-4 py-2 bg-[#03672A] hover:bg-[#046A29] rounded-lg text-white font-montserrat transition-colors duration-300"
+            className="px-4 py-2 bg-gradient-to-r from-[#03672A] to-[#046A29] hover:from-[#046A29] hover:to-[#03672A] rounded-lg text-white font-montserrat transition-all duration-300"
           >
             Find Matches
           </button>
@@ -160,8 +174,46 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#030502] to-[#03672A]/20">
-        <div className="max-w-7xl mx-auto">
+      <div className="min-h-screen pt-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        {/* Animated background with gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#030502] via-[#03672A] to-[#046A29] opacity-90 z-0"></div>
+
+        {/* Animated background pattern */}
+        <div className="absolute inset-0 z-0 opacity-10">
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+              animation: "pulse 15s infinite linear",
+            }}
+          ></div>
+        </div>
+
+        {/* Floating particles */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          {[...Array(20)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-2 h-2 rounded-full bg-white/20"
+              initial={{
+                x: Math.random() * window.innerWidth,
+                y: Math.random() * window.innerHeight,
+                scale: Math.random() * 0.5 + 0.5,
+              }}
+              animate={{
+                y: [null, Math.random() * -100],
+                opacity: [0.2, 0.8, 0.2],
+              }}
+              transition={{
+                duration: Math.random() * 10 + 10,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+            />
+          ))}
+        </div>
+
+        <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex items-center justify-center h-[60vh]">
             <motion.div
               animate={{
@@ -183,8 +235,22 @@ const Dashboard: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen pt-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#030502] to-[#03672A]/20">
-        <div className="max-w-7xl mx-auto">
+      <div className="min-h-screen pt-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        {/* Animated background with gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#030502] via-[#03672A] to-[#046A29] opacity-90 z-0"></div>
+
+        {/* Animated background pattern */}
+        <div className="absolute inset-0 z-0 opacity-10">
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+              animation: "pulse 15s infinite linear",
+            }}
+          ></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto relative z-10">
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 text-red-500">
             <h2 className="text-xl font-nasalization mb-2">Error</h2>
             <p className="font-montserrat">{error}</p>
@@ -195,8 +261,46 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pt-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#030502] to-[#03672A]/20">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen pt-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Animated background with gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#030502] via-[#03672A] to-[#046A29] opacity-90 z-0"></div>
+
+      {/* Animated background pattern */}
+      <div className="absolute inset-0 z-0 opacity-10">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            animation: "pulse 15s infinite linear",
+          }}
+        ></div>
+      </div>
+
+      {/* Floating particles */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        {[...Array(20)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-2 h-2 rounded-full bg-white/20"
+            initial={{
+              x: Math.random() * window.innerWidth,
+              y: Math.random() * window.innerHeight,
+              scale: Math.random() * 0.5 + 0.5,
+            }}
+            animate={{
+              y: [null, Math.random() * -100],
+              opacity: [0.2, 0.8, 0.2],
+            }}
+            transition={{
+              duration: Math.random() * 10 + 10,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -204,7 +308,7 @@ const Dashboard: React.FC = () => {
         >
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div>
-              <h1 className="text-4xl font-nasalization text-white mb-4">
+              <h1 className="text-4xl font-nasalization text-white mb-4 drop-shadow-lg">
                 Dashboard
               </h1>
               <div className="flex items-center gap-4 text-white/60">
@@ -223,21 +327,21 @@ const Dashboard: React.FC = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="px-6 py-3 bg-[#03672A] hover:bg-[#046A29] rounded-xl text-white font-montserrat transition-colors duration-300"
+              className="px-6 py-3 bg-gradient-to-r from-[#03672A] to-[#046A29] hover:from-[#046A29] hover:to-[#03672A] rounded-xl text-white font-montserrat transition-all duration-300 shadow-lg"
             >
               Report New Item
             </motion.button>
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => (
             <motion.div
               key={stat.label}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className={`bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10 ${
+              className={`bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 ${
                 stat.link ? "cursor-pointer hover:border-[#03672A]/50" : ""
               }`}
               onClick={stat.link ? () => navigate(stat.link) : undefined}
@@ -255,7 +359,7 @@ const Dashboard: React.FC = () => {
           ))}
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+        <div className="flex flex-col md:flex-row gap-6 mb-8">
           <div className="flex-1 relative">
             <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
             <input
@@ -263,7 +367,7 @@ const Dashboard: React.FC = () => {
               placeholder="Search items..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:border-[#03672A] transition-colors duration-300 font-montserrat"
+              className="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:border-[#03672A] transition-colors duration-300 font-montserrat backdrop-blur-sm"
             />
           </div>
           <div className="flex gap-2">
@@ -271,8 +375,8 @@ const Dashboard: React.FC = () => {
               onClick={() => setActiveTab("lost")}
               className={`px-6 py-3 rounded-xl font-montserrat transition-all duration-300 ${
                 activeTab === "lost"
-                  ? "bg-[#03672A] text-white"
-                  : "bg-white/5 text-white/60 hover:bg-white/10"
+                  ? "bg-gradient-to-r from-[#03672A] to-[#046A29] text-white"
+                  : "bg-white/10 text-white/60 hover:bg-white/20"
               }`}
             >
               Lost Items
@@ -281,8 +385,8 @@ const Dashboard: React.FC = () => {
               onClick={() => setActiveTab("found")}
               className={`px-6 py-3 rounded-xl font-montserrat transition-all duration-300 ${
                 activeTab === "found"
-                  ? "bg-[#03672A] text-white"
-                  : "bg-white/5 text-white/60 hover:bg-white/10"
+                  ? "bg-gradient-to-r from-[#03672A] to-[#046A29] text-white"
+                  : "bg-white/10 text-white/60 hover:bg-white/20"
               }`}
             >
               Found Items
@@ -297,7 +401,7 @@ const Dashboard: React.FC = () => {
             className="mb-8"
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-nasalization text-white">
+              <h2 className="text-2xl font-nasalization text-white drop-shadow-lg">
                 AI-Powered Matches
               </h2>
               <button
@@ -338,7 +442,7 @@ const Dashboard: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mt-12"
         >
-          <h2 className="text-2xl font-nasalization text-white mb-6">
+          <h2 className="text-2xl font-nasalization text-white mb-6 drop-shadow-lg">
             Potential Connections
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -354,8 +458,11 @@ const Dashboard: React.FC = () => {
               return (
                 <motion.div
                   key={lostItem.id}
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10"
+                  whileHover={{
+                    scale: 1.02,
+                    boxShadow: "0 10px 25px -5px rgba(3, 103, 42, 0.3)",
+                  }}
+                  className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20"
                 >
                   <h3 className="text-xl font-nasalization text-white mb-4">
                     {lostItem.name}
@@ -366,12 +473,16 @@ const Dashboard: React.FC = () => {
                         key={match.id}
                         className="flex items-center gap-4 p-4 bg-white/5 rounded-lg"
                       >
-                        {match.imageUrl && (
+                        {match.imageUrl ? (
                           <img
                             src={match.imageUrl}
                             alt={match.name}
                             className="w-16 h-16 object-cover rounded-lg"
                           />
+                        ) : (
+                          <div className="w-16 h-16 bg-gradient-to-br from-[#03672A]/30 to-[#046A29]/30 rounded-lg flex items-center justify-center">
+                            <FiTag className="w-8 h-8 text-white/40" />
+                          </div>
                         )}
                         <div>
                           <p className="text-white font-montserrat">
