@@ -1,63 +1,67 @@
 import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { useAuth } from "../context/AuthContext";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  FiUser,
-  FiMail,
-  FiHash,
-  FiClock,
-  FiPackage,
   FiSearch,
+  FiMapPin,
+  FiCalendar,
+  FiTag,
+  FiUser,
+  FiPackage,
   FiAward,
+  FiMail,
+  FiPhone,
 } from "react-icons/fi";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "../config/firebase";
-import { LostItem, FoundItem } from "../services/itemService";
+import {
+  getLostItems,
+  getFoundItems,
+  LostItem,
+  FoundItem,
+} from "../services/itemService";
+import { useAuth } from "../context/AuthContext";
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const [lostItems, setLostItems] = useState<LostItem[]>([]);
   const [foundItems, setFoundItems] = useState<FoundItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"lost" | "found">("lost");
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    const fetchUserItems = async () => {
-      if (!user) return;
-
+    const fetchItems = async () => {
       try {
-        // Fetch lost items
-        const lostQuery = query(
-          collection(db, "lostItems"),
-          where("userId", "==", user.uid)
-        );
-        const lostSnapshot = await getDocs(lostQuery);
-        const lostItemsData = lostSnapshot.docs.map((doc) => ({
-          ...doc.data(),
-          id: doc.id,
-        })) as LostItem[];
-
-        // Fetch found items
-        const foundQuery = query(
-          collection(db, "foundItems"),
-          where("userId", "==", user.uid)
-        );
-        const foundSnapshot = await getDocs(foundQuery);
-        const foundItemsData = foundSnapshot.docs.map((doc) => ({
-          ...doc.data(),
-          id: doc.id,
-        })) as FoundItem[];
-
-        setLostItems(lostItemsData);
-        setFoundItems(foundItemsData);
-      } catch (error) {
-        console.error("Error fetching items:", error);
+        setLoading(true);
+        const [lostData, foundData] = await Promise.all([
+          getLostItems(),
+          getFoundItems(),
+        ]);
+        setLostItems(lostData.items);
+        setFoundItems(foundData.items);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to fetch items");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserItems();
-  }, [user]);
+    fetchItems();
+  }, []);
+
+  const filteredItems =
+    activeTab === "lost"
+      ? lostItems.filter(
+          (item) =>
+            item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.category.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      : foundItems.filter(
+          (item) =>
+            item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.category.toLowerCase().includes(searchTerm.toLowerCase())
+        );
 
   const stats = [
     {
@@ -82,63 +86,142 @@ const Dashboard: React.FC = () => {
     },
   ];
 
-  return (
-    <div className="min-h-screen bg-[#030502] pt-24 text-white p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-4xl font-nasalization">Dashboard</h1>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="px-6 py-3 bg-[#03672A] hover:bg-[#046A29] rounded-lg font-montserrat transition-colors duration-300"
-          >
-            Report New Item
-          </motion.button>
+  const ItemCard: React.FC<{
+    item: LostItem | FoundItem;
+    type: "lost" | "found";
+  }> = ({ item, type }) => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10 hover:border-[#03672A]/50 transition-all duration-300"
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <h3 className="text-xl font-nasalization text-white mb-2">
+            {item.name}
+          </h3>
+          <div className="flex items-center gap-2 text-white/60 mb-2">
+            <FiTag className="text-[#03672A]" />
+            <span className="font-montserrat">{item.category}</span>
+          </div>
+          <p className="text-white/80 font-montserrat mb-4">
+            {item.description}
+          </p>
+          <div className="flex flex-wrap gap-4 text-white/60">
+            <div className="flex items-center gap-2">
+              <FiMapPin className="text-[#03672A]" />
+              <span className="font-montserrat">{item.location}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FiCalendar className="text-[#03672A]" />
+              <span className="font-montserrat">
+                {new Date(
+                  type === "lost"
+                    ? (item as LostItem).dateLost
+                    : (item as FoundItem).dateFound
+                ).toLocaleDateString()}
+              </span>
+            </div>
+          </div>
         </div>
+        {item.imageUrl && (
+          <motion.img
+            whileHover={{ scale: 1.05 }}
+            src={item.imageUrl}
+            alt={item.name}
+            className="w-24 h-24 object-cover rounded-lg ml-4"
+          />
+        )}
+      </div>
+    </motion.div>
+  );
 
-        {/* Profile Card */}
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#030502] to-[#03672A]/20">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-[60vh]">
+            <motion.div
+              animate={{
+                scale: [1, 1.2, 1],
+                rotate: [0, 360],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              className="w-16 h-16 border-4 border-[#03672A] border-t-transparent rounded-full"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen pt-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#030502] to-[#03672A]/20">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 text-red-500">
+            <h2 className="text-xl font-nasalization mb-2">Error</h2>
+            <p className="font-montserrat">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen pt-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#030502] to-[#03672A]/20">
+      <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-[#030502]/80 backdrop-blur-xl border border-[#03672A]/30 rounded-2xl p-6 shadow-2xl"
+          className="mb-8"
         >
-          <div className="flex items-center space-x-6">
-            <div className="w-24 h-24 bg-[#03672A]/20 rounded-full flex items-center justify-center">
-              <FiUser className="w-12 h-12 text-[#03672A]" />
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-nasalization">
-                {user?.displayName}
-              </h2>
-              <div className="flex items-center space-x-4 text-white/70">
-                <div className="flex items-center space-x-2">
-                  <FiMail className="w-4 h-4" />
-                  <span className="font-montserrat">{user?.email}</span>
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+              <h1 className="text-4xl font-nasalization text-white mb-4">
+                Dashboard
+              </h1>
+              <div className="flex items-center gap-4 text-white/60">
+                <div className="flex items-center gap-2">
+                  <FiUser className="text-[#03672A]" />
+                  <span className="font-montserrat">
+                    {user?.displayName || "User"}
+                  </span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <FiHash className="w-4 h-4" />
-                  <span className="font-montserrat">ID: {user?.uid}</span>
+                <div className="flex items-center gap-2">
+                  <FiMail className="text-[#03672A]" />
+                  <span className="font-montserrat">{user?.email}</span>
                 </div>
               </div>
             </div>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-6 py-3 bg-[#03672A] hover:bg-[#046A29] rounded-xl text-white font-montserrat transition-colors duration-300"
+            >
+              Report New Item
+            </motion.button>
           </div>
         </motion.div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {stats.map((stat, index) => (
             <motion.div
               key={stat.label}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-[#030502]/80 backdrop-blur-xl border border-[#03672A]/30 rounded-2xl p-6 shadow-2xl"
+              className="bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-white/70 font-montserrat">{stat.label}</p>
-                  <p className="text-3xl font-nasalization mt-2">
+                  <p className="text-white/60 font-montserrat">{stat.label}</p>
+                  <p className="text-3xl font-nasalization text-white mt-2">
                     {stat.value}
                   </p>
                 </div>
@@ -148,138 +231,124 @@ const Dashboard: React.FC = () => {
           ))}
         </div>
 
-        {/* Lost Items */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-[#030502]/80 backdrop-blur-xl border border-[#03672A]/30 rounded-2xl p-6 shadow-2xl"
-        >
-          <h2 className="text-2xl font-nasalization mb-4">Lost Items</h2>
-          {loading ? (
-            <div className="text-center py-8">Loading...</div>
-          ) : lostItems.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {lostItems.map((item) => (
-                <motion.div
-                  key={item.id}
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-[#030502]/60 border border-[#03672A]/20 rounded-xl p-4"
-                >
-                  {item.imageUrl && (
-                    <img
-                      src={item.imageUrl}
-                      alt={item.name}
-                      className="w-full h-48 object-cover rounded-lg mb-4"
-                    />
-                  )}
-                  <h3 className="text-xl font-nasalization mb-2">
-                    {item.name}
-                  </h3>
-                  <p className="text-white/70 font-montserrat mb-2">
-                    {item.description}
-                  </p>
-                  <div className="flex items-center space-x-4 text-white/50 text-sm">
-                    <div className="flex items-center space-x-1">
-                      <FiClock className="w-4 h-4" />
-                      <span>
-                        {new Date(item.dateLost).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <FiPackage className="w-4 h-4" />
-                      <span>{item.category}</span>
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        item.status === "pending"
-                          ? "bg-yellow-500/20 text-yellow-400"
-                          : item.status === "found"
-                          ? "bg-green-500/20 text-green-400"
-                          : "bg-gray-500/20 text-gray-400"
-                      }`}
-                    >
-                      {item.status.charAt(0).toUpperCase() +
-                        item.status.slice(1)}
-                    </span>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-white/50">
-              No lost items reported yet.
-            </div>
-          )}
-        </motion.div>
+        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+          <div className="flex-1 relative">
+            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+            <input
+              type="text"
+              placeholder="Search items..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:border-[#03672A] transition-colors duration-300 font-montserrat"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab("lost")}
+              className={`px-6 py-3 rounded-xl font-montserrat transition-all duration-300 ${
+                activeTab === "lost"
+                  ? "bg-[#03672A] text-white"
+                  : "bg-white/5 text-white/60 hover:bg-white/10"
+              }`}
+            >
+              Lost Items
+            </button>
+            <button
+              onClick={() => setActiveTab("found")}
+              className={`px-6 py-3 rounded-xl font-montserrat transition-all duration-300 ${
+                activeTab === "found"
+                  ? "bg-[#03672A] text-white"
+                  : "bg-white/5 text-white/60 hover:bg-white/10"
+              }`}
+            >
+              Found Items
+            </button>
+          </div>
+        </div>
 
-        {/* Found Items */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="grid gap-6"
+          >
+            {filteredItems.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-white/60 font-montserrat">
+                  No {activeTab} items found
+                </p>
+              </div>
+            ) : (
+              filteredItems.map((item) => (
+                <ItemCard key={item.id} item={item} type={activeTab} />
+              ))
+            )}
+          </motion.div>
+        </AnimatePresence>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-[#030502]/80 backdrop-blur-xl border border-[#03672A]/30 rounded-2xl p-6 shadow-2xl"
+          className="mt-12"
         >
-          <h2 className="text-2xl font-nasalization mb-4">Found Items</h2>
-          {loading ? (
-            <div className="text-center py-8">Loading...</div>
-          ) : foundItems.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {foundItems.map((item) => (
+          <h2 className="text-2xl font-nasalization text-white mb-6">
+            Potential Connections
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {lostItems.map((lostItem) => {
+              const potentialMatches = foundItems.filter(
+                (foundItem) =>
+                  foundItem.category === lostItem.category &&
+                  foundItem.location === lostItem.location
+              );
+
+              if (potentialMatches.length === 0) return null;
+
+              return (
                 <motion.div
-                  key={item.id}
+                  key={lostItem.id}
                   whileHover={{ scale: 1.02 }}
-                  className="bg-[#030502]/60 border border-[#03672A]/20 rounded-xl p-4"
+                  className="bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10"
                 >
-                  {item.imageUrl && (
-                    <img
-                      src={item.imageUrl}
-                      alt={item.name}
-                      className="w-full h-48 object-cover rounded-lg mb-4"
-                    />
-                  )}
-                  <h3 className="text-xl font-nasalization mb-2">
-                    {item.name}
+                  <h3 className="text-xl font-nasalization text-white mb-4">
+                    {lostItem.name}
                   </h3>
-                  <p className="text-white/70 font-montserrat mb-2">
-                    {item.description}
-                  </p>
-                  <div className="flex items-center space-x-4 text-white/50 text-sm">
-                    <div className="flex items-center space-x-1">
-                      <FiClock className="w-4 h-4" />
-                      <span>
-                        {new Date(item.dateFound).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <FiPackage className="w-4 h-4" />
-                      <span>{item.category}</span>
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        item.status === "pending"
-                          ? "bg-yellow-500/20 text-yellow-400"
-                          : item.status === "claimed"
-                          ? "bg-green-500/20 text-green-400"
-                          : "bg-gray-500/20 text-gray-400"
-                      }`}
-                    >
-                      {item.status.charAt(0).toUpperCase() +
-                        item.status.slice(1)}
-                    </span>
+                  <div className="space-y-4">
+                    {potentialMatches.map((match) => (
+                      <div
+                        key={match.id}
+                        className="flex items-center gap-4 p-4 bg-white/5 rounded-lg"
+                      >
+                        {match.imageUrl && (
+                          <img
+                            src={match.imageUrl}
+                            alt={match.name}
+                            className="w-16 h-16 object-cover rounded-lg"
+                          />
+                        )}
+                        <div>
+                          <p className="text-white font-montserrat">
+                            {match.name}
+                          </p>
+                          <p className="text-white/60 text-sm font-montserrat">
+                            Found at {match.location}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <FiPhone className="text-[#03672A]" />
+                            <span className="text-white/80 text-sm font-montserrat">
+                              {match.contactInfo?.phone || "No phone provided"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </motion.div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-white/50">
-              No found items reported yet.
-            </div>
-          )}
+              );
+            })}
+          </div>
         </motion.div>
       </div>
     </div>

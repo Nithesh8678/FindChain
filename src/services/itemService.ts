@@ -11,8 +11,12 @@ import {
   QueryDocumentSnapshot,
   updateDoc,
   doc,
+  getDoc,
+  deleteDoc,
+  Timestamp,
 } from "firebase/firestore";
-import { db } from "../config/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "../config/firebase";
 import uploadToCloudinary from "./cloudinaryService";
 
 // Types
@@ -175,63 +179,59 @@ export const reportFoundItem = async (
 };
 
 // Get Lost Items with Pagination
-export const getLostItems = async (
-  lastDoc?: QueryDocumentSnapshot<DocumentData>,
-  itemsPerPage: number = 10
-) => {
+export const getLostItems = async (): Promise<{ items: LostItem[] }> => {
   try {
-    let q = query(
-      lostItemsCollection,
+    const lostItemsRef = collection(db, "lostItems");
+    const q = query(
+      lostItemsRef,
       where("status", "==", "pending"),
       orderBy("createdAt", "desc"),
-      limit(itemsPerPage)
+      limit(50)
     );
 
-    if (lastDoc) {
-      q = query(q, startAfter(lastDoc));
-    }
+    const snapshot = await getDocs(q);
+    const items = snapshot.docs.map((doc) => ({
+      ...doc.data(),
+      id: doc.id,
+    })) as LostItem[];
 
-    const querySnapshot = await getDocs(q);
-    const items: LostItem[] = [];
-    querySnapshot.forEach((doc) => {
-      items.push({ id: doc.id, ...(doc.data() as Omit<LostItem, "id">) });
-    });
-
-    const lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
-    return { items, lastVisible };
+    return { items };
   } catch (error) {
     console.error("Error getting lost items:", error);
+    // Return empty array if index is not ready yet
+    if (error instanceof Error && error.message.includes("requires an index")) {
+      console.log("Index is being created. Returning empty array for now.");
+      return { items: [] };
+    }
     throw error;
   }
 };
 
 // Get Found Items with Pagination
-export const getFoundItems = async (
-  lastDoc?: QueryDocumentSnapshot<DocumentData>,
-  itemsPerPage: number = 10
-) => {
+export const getFoundItems = async (): Promise<{ items: FoundItem[] }> => {
   try {
-    let q = query(
-      foundItemsCollection,
+    const foundItemsRef = collection(db, "foundItems");
+    const q = query(
+      foundItemsRef,
       where("status", "==", "pending"),
       orderBy("createdAt", "desc"),
-      limit(itemsPerPage)
+      limit(50)
     );
 
-    if (lastDoc) {
-      q = query(q, startAfter(lastDoc));
-    }
+    const snapshot = await getDocs(q);
+    const items = snapshot.docs.map((doc) => ({
+      ...doc.data(),
+      id: doc.id,
+    })) as FoundItem[];
 
-    const querySnapshot = await getDocs(q);
-    const items: FoundItem[] = [];
-    querySnapshot.forEach((doc) => {
-      items.push({ id: doc.id, ...(doc.data() as Omit<FoundItem, "id">) });
-    });
-
-    const lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
-    return { items, lastVisible };
+    return { items };
   } catch (error) {
     console.error("Error getting found items:", error);
+    // Return empty array if index is not ready yet
+    if (error instanceof Error && error.message.includes("requires an index")) {
+      console.log("Index is being created. Returning empty array for now.");
+      return { items: [] };
+    }
     throw error;
   }
 };
